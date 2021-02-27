@@ -9,7 +9,7 @@ const slugify = require('slugify')
 
 router.get("/", async function (req, res, next) {
     try {
-        const companiesQuery = await db.query("SELECT id, name FROM companies")
+        const companiesQuery = await db.query("SELECT code, name FROM companies")
         return res.json({ companies: companiesQuery.rows });
     } catch (err) {
         return next(err)
@@ -24,7 +24,7 @@ router.get("/:code", async function (req, res, next) {
 
         const invoiceQuery = await db.query(
             `SELECT id, amt FROM invoices
-                WHERE  comp_id = $1`, [req.params.code]
+                WHERE  comp_code = $1`, [req.params.code]
         )
         
         const industriesQuery = await db.query(
@@ -58,7 +58,7 @@ router.post("/", async function (req, res, next) {
             `INSERT INTO companies (code,name,description) 
            VALUES ($1,$2,$3) 
            RETURNING *`,
-            [slugify(req.body.name), req.body.name, req.body.description,]);
+            [slugify(req.body.name.toString()), req.body.name, req.body.description,]);
 
         return res.status(201).json({ company: result.rows[0] });
     } catch (err) {
@@ -77,13 +77,13 @@ router.put("/:code", async function(req, res, next) {
              SET name=$1, description=$3
              WHERE code = $2
              RETURNING *`,
-        [req.body.name, slugify(req.body.code), req.body.description]);
+        [req.body.name, req.params.code , req.body.description]);
   
       if (result.rows.length === 0) {
-        throw new ExpressError(`There is no ccompany with code of '${req.params.code}`, 404);
+        throw new ExpressError(`There is no company with code of '${req.params.code}`, 404);
       }
   
-      return res.json({ company: result.rows[0]});
+      return res.status(201).json({ company: result.rows[0]});
     } catch (err) {
       return next(err);
     }
@@ -102,3 +102,5 @@ router.put("/:code", async function(req, res, next) {
       return next(err);
     }
   });
+
+  module.exports = router;
