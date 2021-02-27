@@ -1,4 +1,5 @@
 const express = require("express");
+const { request } = require("../app");
 const router = new express.Router();
 const db = require("../db")
 const ExpressError = require("../expressError")
@@ -48,16 +49,39 @@ router.post("/", async function (req, res, next) {
 
 router.put("/:id", async function(req, res, next) {
     try {
+      let paid
       if ("id" in req.body) {
         throw new ExpressError("Not allowed", 400)
       }
-  
-      const result = await db.query(
-        `UPDATE invoices 
-             SET amt=$1
-             WHERE id = $2
-             RETURNING *`,
-        [req.body.amt, req.params.id]);
+      if (request.body.paid === true){
+          
+        const result = await db.query(
+            `UPDATE invoices 
+                 SET amt=$1, paid_date = CURRENT_DATE
+                 WHERE id = $2
+                 RETURNING *`,
+            [req.body.amt, req.params.id]);
+
+        
+      } else if (request.body.paid === false){
+
+        const result = await db.query(
+            `UPDATE invoices 
+                 SET amt=$1, paid_date = null
+                 WHERE id = $2
+                 RETURNING *`,
+            [req.body.amt, req.params.id]);
+
+      } else {
+          
+        const result = await db.query(
+            `UPDATE invoices 
+                 SET amt=$1
+                 WHERE id = $2
+                 RETURNING *`,
+            [req.body.amt, req.params.id]);
+
+      }
   
       if (result.rows.length === 0) {
         throw new ExpressError(`There is no invoice with id of '${req.params.id}`, 404);
